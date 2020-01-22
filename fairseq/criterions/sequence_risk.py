@@ -25,6 +25,8 @@ class SequenceRiskCriterion(FairseqSequenceCriterion):
             )
         self.smoothing_alpha = args.smoothing_alpha
         self.rescale_costs = args.rescale_costs
+        self.eps = 0.1
+        self.obj_alpha = args.obj_alpha
 
     @staticmethod
     def add_args(parser):
@@ -36,7 +38,23 @@ class SequenceRiskCriterion(FairseqSequenceCriterion):
                             help='normalize costs within each hypothesis')
         parser.add_argument('--rescale-costs', action='store_true',
                             help='normalize costs within each hypothesis')
+        parser.add_argument('--obj-alpha', type=float, default=0.0,
+                            help='normalize costs within each hypothesis')
         # fmt: on
+
+    def compute_loss(self, model, net_output, sample, reduce=True):
+        lprobs = model.get_normalized_probs(net_output, log_probs=True)
+        lprobs = lprobs.view(-1, lprobs.size(-1))
+        target = model.get_targets(sample, net_output).view(-1, 1)
+        non_pad_mask = target.ne(self.padding_idx)
+        nll_loss = -lprobs.gather(dim=-1, index=target)[non_pad_mask]
+        smooth_loss = -lprobs.sum(dim=-1, keepdim=True)[non_pad_mask]
+        if reduce:
+            nll_loss = nll_loss.sum()
+            smooth_loss = smooth_loss.sum()
+        eps_i = self.eps / lprobs.size(-1)
+        loss = (1. - self.eps) * nll_loss + eps_i * smooth_loss
+        return loss, nll_loss
 
     def forward(self, model, sample, reduce=True):
         """Compute the loss for the given sample.
@@ -69,22 +87,25 @@ class SequenceRiskCriterion(FairseqSequenceCriterion):
         pad_mask = hypotheses.ne(self.task.target_dictionary.pad())
         lengths = pad_mask.sum(dim=2).float()
 
+        mle = model(**sample['net_input'])
+        mle_loss, _ = self.compute_loss(model, mle, sample, reduce=reduce)
         net_output = model(**new_sample['net_input'])
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
         lprobs = lprobs.view(bsz, nhypos, hypolen, -1)
 
         scores = lprobs.gather(3, hypotheses)
-        #import pdb
-        #pdb.set_trace()
         scores *= pad_mask.float()
         avg_scores = scores.sum(dim=2) / lengths
         probs = F.softmax(self.smoothing_alpha*avg_scores, dim=1).squeeze(-1)
-        loss = (probs * costs).sum()
+        risk_loss = (probs * costs).sum()
 
+        loss = (1 - self.obj_alpha) * risk_loss + self.obj_alpha * mle_loss
         sample_size = bsz
         assert bsz == utils.item(costs.size(dim=0))
         logging_output = {
             'loss': utils.item(loss.data),
+            'risk_loss': utils.item(risk_loss),
+            'mle_loss': utils.item(mle_loss),
             'num_cost': costs.numel(),
             'ntokens': sample['ntokens'],
             'nsentences': bsz,
@@ -113,6 +134,8 @@ class SequenceRiskCriterion(FairseqSequenceCriterion):
         num_costs = sum(log.get('num_cost', 0) for log in logging_outputs)
         agg_outputs = {
             'loss': sum(log.get('loss', 0) for log in logging_outputs) / sample_size,
+            'mle': sum(log.get('mle_loss', 0) for log in logging_outputs) / sample_size,
+            'risk': sum(log.get('risk_loss', 0) for log in logging_outputs) / sample_size,
             'ntokens': ntokens,
             'nsentences': nsentences,
         }
