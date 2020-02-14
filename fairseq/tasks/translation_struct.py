@@ -100,10 +100,26 @@ class SimileScorer(object):
         wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
         scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
 
-        return scores[0]
-        #self.scorer.reset(one_init=True)
-        #self.scorer.add(ref, hypo)
-        #return 1. - (self.scorer.score() / 100.)
+        return scores[0].item()
+
+    def get_costs(self, ref, hypos):
+
+        def make_example(sentence):
+            sentence = self.detok.detokenize(sentence.split())
+            sentence = sentence.lower()
+            sentence = " ".join(self.tok.tokenize(sentence))
+            sentence = self.model.sp.EncodeAsPieces(sentence)
+            wp1 = Example(" ".join(sentence))
+            wp1.populate_embeddings(self.model.vocab)
+            return wp1
+
+        ref_e = make_example(ref)
+        hypos = [make_example(i) for i in hypos]
+        wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
+        wx2, wl2, wm2 = self.model.torchify_batch(hypos)
+        scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+
+        return scores
 
     def postprocess_costs(self, costs):
         return costs
@@ -321,9 +337,29 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         pad_idx = self.target_dictionary.pad()
 
         costs = torch.zeros(bsz, nhypos).to(sample['target'].device)
-        for i, hypos_i in enumerate(sample['hypos']):
-            ref = utils.strip_pad(target[i, :], pad_idx).cpu()
-            ref = scorer.preprocess_ref(ref)
-            for j, hypo in enumerate(hypos_i):
-                costs[i, j] = scorer.get_cost(ref, scorer.preprocess_hypo(hypo))
+
+        if self.args.seq_scorer == "simile":
+            for i, hypos_i in enumerate(sample['hypos']):
+                ref = utils.strip_pad(target[i, :], pad_idx).cpu()
+                ref = scorer.preprocess_ref(ref)
+                ref_len = len(ref.split())
+                hypos = []
+                hypo_lens = []
+
+                for j, hypo in enumerate(hypos_i):
+                    hyp = scorer.preprocess_hypo(hypo)
+                    hypos.append(hyp)
+                    hypo_lens.append(len(hyp.split()))
+
+                _costs = scorer.get_costs(ref, hypos)
+
+                for j, _ in enumerate(hypos_i):
+                    lp = np.exp(1 - max(ref_len, hypo_lens[j]) / float(min(ref_len, hypo_lens[j])))
+                    costs[i, j] = 1 - lp ** self.args.simile_lenpen * _costs[j].item()
+        else:
+            for i, hypos_i in enumerate(sample['hypos']):
+                ref = utils.strip_pad(target[i, :], pad_idx).cpu()
+                ref = scorer.preprocess_ref(ref)
+                for j, hypo in enumerate(hypos_i):
+                    costs[i, j] = scorer.get_cost(ref, scorer.preprocess_hypo(hypo))
         return scorer.postprocess_costs(costs)
