@@ -18,6 +18,9 @@ from fairseq.tasks import register_task, translation
 from .sim_models import WordAveraging
 from .sim_utils import Example
 
+from sacremoses import MosesDetokenizer
+from nltk.tokenize import TreebankWordTokenizer
+
 class BleuScorer(object):
 
     key = 'bleu'
@@ -68,19 +71,36 @@ class SimileScorer(object):
         self.model.load_state_dict(state_dict, strict=True)
         # use a fresh Dictionary for scoring, so that we can add new elements
         self.scoring_dict = Dictionary()
+        self.detok = MosesDetokenizer('en')
+        self.tok = TreebankWordTokenizer()
 
     def preprocess_ref(self, ref):
         ref = self.tgt_dict.string(ref, bpe_symbol=self.bpe_symbol, escape_unk=True)
-        return self.scoring_dict.encode_line(ref, add_if_not_exist=True)
+        return ref
 
     def preprocess_hypo(self, hypo):
         hypo = hypo['tokens']
         hypo = self.tgt_dict.string(hypo.int().cpu(), bpe_symbol=self.bpe_symbol)
-        return self.scoring_dict.encode_line(hypo, add_if_not_exist=True)
+        return hypo
 
     def get_cost(self, ref, hypo):
-        import pdb
-        pdb.set_trace()
+
+        def make_example(sentence):
+            sentence = self.detok.detokenize(sentence.split())
+            sentence = sentence.lower()
+            sentence = " ".join(self.tok.tokenize(sentence))
+            sentence = self.model.sp.EncodeAsPieces(sentence)
+            wp1 = Example(" ".join(sentence))
+            wp1.populate_embeddings(self.model.vocab)
+            return wp1
+
+        ref_e = make_example(ref)
+        hyp_e = make_example(hypo)
+        wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
+        wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
+        scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+
+        return scores[0]
         #self.scorer.reset(one_init=True)
         #self.scorer.add(ref, hypo)
         #return 1. - (self.scorer.score() / 100.)
