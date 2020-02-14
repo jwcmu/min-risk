@@ -15,13 +15,14 @@ from fairseq import bleu, utils
 from fairseq.data import Dictionary, language_pair_dataset
 from fairseq.sequence_generator import SequenceGenerator
 from fairseq.tasks import register_task, translation
-
+from .sim_models import WordAveraging
+from .sim_utils import Example
 
 class BleuScorer(object):
 
     key = 'bleu'
 
-    def __init__(self, tgt_dict, bpe_symbol='@@ '):
+    def __init__(self, tgt_dict, bpe_symbol='@@ ', args=None):
         self.tgt_dict = tgt_dict
         self.bpe_symbol = bpe_symbol
         self.scorer = bleu.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
@@ -45,6 +46,47 @@ class BleuScorer(object):
     def postprocess_costs(self, costs):
         return costs
 
+class SimileScorer(object):
+
+    key = 'simile'
+
+    def __init__(self, tgt_dict, bpe_symbol='@@ ', args=None):
+        self.tgt_dict = tgt_dict
+        self.bpe_symbol = bpe_symbol
+        #self.scorer = bleu.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
+        model = torch.load('sim/sim',
+                               map_location='cpu')
+
+        state_dict = model['state_dict']
+        vocab_words = model['vocab_words']
+        sim_args = model['args']
+
+        #turn off gpu
+        sim_args.gpu = -1
+
+        self.model = WordAveraging(sim_args, vocab_words)
+        self.model.load_state_dict(state_dict, strict=True)
+        # use a fresh Dictionary for scoring, so that we can add new elements
+        self.scoring_dict = Dictionary()
+
+    def preprocess_ref(self, ref):
+        ref = self.tgt_dict.string(ref, bpe_symbol=self.bpe_symbol, escape_unk=True)
+        return self.scoring_dict.encode_line(ref, add_if_not_exist=True)
+
+    def preprocess_hypo(self, hypo):
+        hypo = hypo['tokens']
+        hypo = self.tgt_dict.string(hypo.int().cpu(), bpe_symbol=self.bpe_symbol)
+        return self.scoring_dict.encode_line(hypo, add_if_not_exist=True)
+
+    def get_cost(self, ref, hypo):
+        import pdb
+        pdb.set_trace()
+        #self.scorer.reset(one_init=True)
+        #self.scorer.add(ref, hypo)
+        #return 1. - (self.scorer.score() / 100.)
+
+    def postprocess_costs(self, costs):
+        return costs
 
 @register_task('translation_struct')
 class TranslationStructuredPredictionTask(translation.TranslationTask):
@@ -80,7 +122,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         parser.add_argument('--seq-keep-reference', default=False, action='store_true',
                             help='retain the reference in the list of hypos')
         parser.add_argument('--seq-scorer', default='bleu', metavar='SCORER',
-                            choices=['bleu'],
+                            choices=['bleu', 'simile', 'mixed'],
                             help='optimization metric for sequence level training')
 
         parser.add_argument('--seq-gen-with-dropout', default=False, action='store_true',
@@ -97,9 +139,14 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
                             help='use sampling instead of beam search')
         parser.add_argument('--seq-unkpen', default=0, type=float,
                             help='unknown word penalty to be used in seq generation')
+        parser.add_argument('--simile-lenpen', default=0.25, type=float,
+                            help='unknown word penalty to be used in seq generation')
+        parser.add_argument('--mixed-ratio', default=0.5, type=float,
+                            help='unknown word penalty to be used in seq generation')
 
     def __init__(self, args, src_dict, tgt_dict):
         super().__init__(args, src_dict, tgt_dict)
+        self.args = args
         self._generator = None
         self._scorers = {}
 
@@ -234,6 +281,10 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
             if scorer == 'bleu':
                 self._scorers[scorer] = BleuScorer(
                     tgt_dict, bpe_symbol=self.args.seq_remove_bpe,
+                )
+            elif scorer == 'simile':
+                self._scorers[scorer] = SimileScorer(
+                    tgt_dict, bpe_symbol=self.args.seq_remove_bpe, args=self.args,
                 )
             else:
                 raise ValueError('Unknown sequence scorer {}'.format(scorer))

@@ -118,3 +118,5 @@ examples/translation/iwslt14.tokenized.de-en
 examples/translation/orig
 examples/translation/mosesdecoder
 examples/translation/subword-nmt
+
+sim/

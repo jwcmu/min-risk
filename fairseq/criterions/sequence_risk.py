@@ -11,7 +11,6 @@ import torch.nn.functional as F
 from fairseq import utils
 from fairseq.criterions import FairseqSequenceCriterion, register_criterion
 
-
 @register_criterion('sequence_risk')
 class SequenceRiskCriterion(FairseqSequenceCriterion):
 
