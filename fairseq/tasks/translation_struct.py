@@ -54,7 +54,7 @@ class SimileScorer(object):
         self.tgt_dict = tgt_dict
         self.bpe_symbol = bpe_symbol
         #self.scorer = bleu.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
-        model = torch.load('sim/sim',
+        model = torch.load('sim/sim.pt',
                                map_location='cpu')
 
         state_dict = model['state_dict']
