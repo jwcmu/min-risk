@@ -35,7 +35,7 @@ class SequenceRiskCriterion(FairseqSequenceCriterion):
                             help='normalize costs within each hypothesis')
         parser.add_argument('--smoothing-alpha', type=float, default=1.0,
                             help='normalize costs within each hypothesis')
-        parser.add_argument('--no-rescale-costs', action='store_false',
+        parser.add_argument('--rescale-costs', type=int, default=1,
                             help='normalize costs within each hypothesis')
         parser.add_argument('--obj-alpha', type=float, default=0.0,
                             help='normalize costs within each hypothesis')
