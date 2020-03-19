@@ -176,14 +176,14 @@ class CrossLingualSimileScorer():
             wp1.populate_embeddings(self.model.vocab)
             return wp1
 
-        if self.ratio == 0:
+        if self.cl_ratio == 0:
             ref_e = make_example(ref)
             hyp_e = make_example(hypo)
             wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
             wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
             score = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
             score = score.item()
-        elif self.ratio == 1:
+        elif self.cl_ratio == 1:
             src_e = make_example(src)
             hyp_e = make_example(hypo)
             import pdb
