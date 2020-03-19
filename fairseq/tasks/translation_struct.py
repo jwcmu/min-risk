@@ -186,6 +186,8 @@ class CrossLingualSimileScorer():
         elif self.ratio == 1:
             src_e = make_example(src)
             hyp_e = make_example(hypo)
+            import pdb
+            pdb.set_trace()
             wx1, wl1, wm1 = self.model.torchify_batch([src_e])
             wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
             score = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
@@ -467,8 +469,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         nhypos = len(sample['hypos'][0])
         target = sample['target'].int()
         source = sample['net_input']['src_tokens'].int()
-        import pdb
-        pdb.set_trace()
+
         pad_idx = self.target_dictionary.pad()
 
         costs = torch.zeros(bsz, nhypos).to(sample['target'].device)
