@@ -13,7 +13,7 @@ base = "python -u train.py data-bin/wmt17_en_de -a transformer_vaswani_wmt_en_de
        "polynomial_decay --warmup-updates 4000 --weight-decay 0.1 --adam-eps 1e-06 " \
        "--clip-norm 0.0 --reset-dataloader --reset-meters --obj-alpha {2} " \
        "--distributed-world-size 4 --update-freq 8 --save-interval-updates 2500 " \
-       "--simile-lenpen 0.5 --seq-scorer cl-simile --cl-ratio {3}"
+       "--simile-lenpen 0.5 --seq-scorer cl-simile --cl-ratio {3} --seq-remove-bpe '@@ '"
 
 ct=1
 

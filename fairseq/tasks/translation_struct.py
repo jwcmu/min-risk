@@ -162,8 +162,6 @@ class CrossLingualSimileScorer():
         return hypo
 
     def preprocess_src(self, src):
-        import pdb
-        pdb.set_trace()
         src = self.src_dict.string(src, bpe_symbol=self.bpe_symbol, escape_unk=True)
         return src
 
@@ -229,8 +227,6 @@ class CrossLingualSimileScorer():
         elif self.cl_ratio == 1:
             src_e = make_example(src)
             hypos = [make_example(i) for i in hypos]
-            import pdb
-            pdb.set_trace()
             wx1, wl1, wm1 = self.model.torchify_batch([src_e])
             wx2, wl2, wm2 = self.model.torchify_batch(hypos)
             scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
