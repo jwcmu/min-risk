@@ -6,7 +6,7 @@ import sentencepiece as spm
 
 class ParaModel(nn.Module):
 
-    def __init__(self, args, vocab):
+    def __init__(self, args, vocab, sp_file='sim/sim.sp.30k.model'):
         super(ParaModel, self).__init__()
 
         self.args = args
@@ -16,7 +16,7 @@ class ParaModel(nn.Module):
         self.cosine = CosineSimilarity()
 
         self.sp = spm.SentencePieceProcessor()
-        self.sp.Load('sim/sim.sp.30k.model')
+        self.sp.Load(sp_file)
 
     def compute_mask(self, lengths):
 
@@ -65,8 +65,8 @@ class ParaModel(nn.Module):
 
 class WordAveraging(ParaModel):
 
-    def __init__(self, args, vocab):
-        super(WordAveraging, self).__init__(args, vocab)
+    def __init__(self, args, vocab, sp_file="sim/sim.sp.30k.model"):
+        super(WordAveraging, self).__init__(args, vocab, sp_file)
 
         self.vocab = vocab
         self.embedding = nn.Embedding(len(self.vocab), self.args.dim)

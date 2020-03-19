@@ -67,7 +67,7 @@ class SimileScorer(object):
         #turn off gpu
         sim_args.gpu = -1
 
-        self.model = WordAveraging(sim_args, vocab_words)
+        self.model = WordAveraging(sim_args, vocab_words, sp_file="sim/sim.sp.30k.model")
         self.model.load_state_dict(state_dict, strict=True)
         # use a fresh Dictionary for scoring, so that we can add new elements
         self.scoring_dict = Dictionary()
@@ -124,6 +124,131 @@ class SimileScorer(object):
     def postprocess_costs(self, costs):
         return costs
 
+class CrossLingualSimileScorer():
+
+    key = 'cl-simile'
+
+    def __init__(self, tgt_dict, src_dict, cl_ratio, bpe_symbol='@@ ', args=None):
+        self.tgt_dict = tgt_dict
+        self.src_dict = src_dict
+        self.bpe_symbol = bpe_symbol
+        self.cl_ratio = cl_ratio
+
+        model = torch.load('cl_sim/model.de.lc.100_4_50000.pt',
+                               map_location='cpu')
+
+        state_dict = model['state_dict']
+        vocab_words = model['vocab_words']
+        sim_args = model['args']
+
+        #turn off gpu
+        sim_args.gpu = -1
+
+        self.model = WordAveraging(sim_args, vocab_words, sp_file="cl_sim/all.de.lc.sp.50k.model")
+        self.model.load_state_dict(state_dict, strict=True)
+        # use a fresh Dictionary for scoring, so that we can add new elements
+        self.scoring_dict = Dictionary()
+        self.detok = MosesDetokenizer('en')
+
+        self.lower_case = sim_args.lower_case
+
+    def preprocess_ref(self, ref):
+        ref = self.tgt_dict.string(ref, bpe_symbol=self.bpe_symbol, escape_unk=True)
+        return ref
+
+    def preprocess_hypo(self, hypo):
+        hypo = hypo['tokens']
+        hypo = self.tgt_dict.string(hypo.int().cpu(), bpe_symbol=self.bpe_symbol)
+        return hypo
+
+    def preprocess_src(self, src):
+        src = self.src_dict.string(src, bpe_symbol=self.bpe_symbol, escape_unk=True)
+        return src
+
+    def get_cost(self, ref, hypo, src):
+
+        def make_example(sentence):
+            sentence = self.detok.detokenize(sentence.split())
+            if self.lower_case:
+                sentence = sentence.lower()
+            sentence = self.model.sp.EncodeAsPieces(sentence)
+            wp1 = Example(" ".join(sentence), lower=self.lower_case)
+            wp1.populate_embeddings(self.model.vocab)
+            return wp1
+
+        if self.ratio == 0:
+            ref_e = make_example(ref)
+            hyp_e = make_example(hypo)
+            wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
+            wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
+            score = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+            score = score.item()
+        elif self.ratio == 1:
+            src_e = make_example(src)
+            hyp_e = make_example(hypo)
+            wx1, wl1, wm1 = self.model.torchify_batch([src_e])
+            wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
+            score = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+            score = score.item()
+        else:
+            ref_e = make_example(ref)
+            src_e = make_example(src)
+            hyp_e = make_example(hypo)
+            wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
+            wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
+            score_ref = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+            score_ref = score_ref.item()
+
+            wx1, wl1, wm1 = self.model.torchify_batch([src_e])
+            score_src = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+            score_src = score_src.item()
+
+            score = self.cl_ratio * score_src + (1 - self.cl_ratio) * score_ref
+
+        return score
+
+    def get_costs(self, ref, hypos, src):
+
+        def make_example(sentence):
+            sentence = self.detok.detokenize(sentence.split())
+            if self.lower_case:
+                sentence = sentence.lower()
+            sentence = self.model.sp.EncodeAsPieces(sentence)
+            wp1 = Example(" ".join(sentence), lower=self.lower_case)
+            wp1.populate_embeddings(self.model.vocab)
+            return wp1
+
+        if self.ratio == 0:
+            ref_e = make_example(ref)
+            hypos = [make_example(i) for i in hypos]
+            wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
+            wx2, wl2, wm2 = self.model.torchify_batch(hypos)
+            scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+        elif self.ratio == 1:
+            src_e = make_example(src)
+            hypos = [make_example(i) for i in hypos]
+            wx1, wl1, wm1 = self.model.torchify_batch([src_e])
+            wx2, wl2, wm2 = self.model.torchify_batch(hypos)
+            scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+        else:
+            ref_e = make_example(ref)
+            src_e = make_example(src)
+            hypos = [make_example(i) for i in hypos]
+            wx1, wl1, wm1 = self.model.torchify_batch([ref_e])
+            wx2, wl2, wm2 = self.model.torchify_batch(hypos)
+            score_ref = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+
+            wx1, wl1, wm1 = self.model.torchify_batch([src_e])
+            score_src = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
+
+            scores = self.cl_ratio * score_src + (1 - self.cl_ratio) * score_ref
+
+        return scores
+
+    def postprocess_costs(self, costs):
+        return costs
+
+
 @register_task('translation_struct')
 class TranslationStructuredPredictionTask(translation.TranslationTask):
     """
@@ -178,6 +303,8 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         parser.add_argument('--simile-lenpen', default=0.25, type=float,
                             help='unknown word penalty to be used in seq generation')
         parser.add_argument('--mixed-ratio', default=0.5, type=float,
+                            help='unknown word penalty to be used in seq generation')
+        parser.add_argument('--cross-lingual-ratio', default=0.0, type=float,
                             help='unknown word penalty to be used in seq generation')
 
     def __init__(self, args, src_dict, tgt_dict):
@@ -314,6 +441,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
     def get_sequence_scorer(self, scorer):
         if scorer not in self._scorers:
             tgt_dict = self.target_dictionary
+            src_dict = self.source_dictionary
             if scorer == 'bleu':
                 self._scorers[scorer] = BleuScorer(
                     tgt_dict, bpe_symbol=self.args.seq_remove_bpe,
@@ -321,6 +449,10 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
             elif scorer == 'simile':
                 self._scorers[scorer] = SimileScorer(
                     tgt_dict, bpe_symbol=self.args.seq_remove_bpe, args=self.args,
+                )
+            elif scorer == 'cl-simile':
+                self._scorers[scorer] = CrossLingualSimileScorer(
+                    tgt_dict, src_dict, bpe_symbol=self.args.seq_remove_bpe, args=self.args,
                 )
             else:
                 raise ValueError('Unknown sequence scorer {}'.format(scorer))
@@ -334,6 +466,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         bsz = len(sample['hypos'])
         nhypos = len(sample['hypos'][0])
         target = sample['target'].int()
+        source = sample['source'].int()
         pad_idx = self.target_dictionary.pad()
 
         costs = torch.zeros(bsz, nhypos).to(sample['target'].device)
@@ -342,6 +475,27 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
             for i, hypos_i in enumerate(sample['hypos']):
                 ref = utils.strip_pad(target[i, :], pad_idx).cpu()
                 ref = scorer.preprocess_ref(ref)
+                ref_len = len(ref.split())
+                hypos = []
+                hypo_lens = []
+
+                for j, hypo in enumerate(hypos_i):
+                    hyp = scorer.preprocess_hypo(hypo)
+                    hypos.append(hyp)
+                    hypo_lens.append(len(hyp.split()))
+
+                _costs = scorer.get_costs(ref, hypos)
+
+                for j, _ in enumerate(hypos_i):
+                    lp = np.exp(1 - max(ref_len, hypo_lens[j]) / float(min(ref_len, hypo_lens[j])))
+                    costs[i, j] = 1 - lp ** self.args.simile_lenpen * _costs[j].item()
+        elif self.args.seq_scorer == "cl-simile":
+            for i, hypos_i in enumerate(sample['hypos']):
+                ref = utils.strip_pad(target[i, :], pad_idx).cpu()
+                ref = scorer.preprocess_ref(ref)
+                src = utils.strip_pad(source[i, :], pad_idx).cpu()
+                src = scorer.preprocess_src(src)
+
                 ref_len = len(ref.split())
                 hypos = []
                 hypo_lens = []

@@ -59,19 +59,20 @@ def mean_pool(x, lengths, gpu):
     return out
 
 def lookup(words, w):
-    w = w.lower()
     if w in words:
         return words[w]
 
 class Example(object):
 
-    def __init__(self, sentence):
-        self.sentence = sentence.strip().lower()
+    def __init__(self, sentence, lower=True):
+        if lower:
+            self.sentence = sentence.strip().lower()
+        else:
+            self.sentence = sentence.strip()
         self.embeddings = []
-        self.representation = None
 
     def populate_embeddings(self, words):
-        sentence = self.sentence.lower()
+        sentence = self.sentence
         arr = sentence.split()
         for i in arr:
             emb = lookup(words, i)
