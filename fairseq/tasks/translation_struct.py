@@ -162,6 +162,8 @@ class CrossLingualSimileScorer():
         return hypo
 
     def preprocess_src(self, src):
+        import pdb
+        pdb.set_trace()
         src = self.src_dict.string(src, bpe_symbol=self.bpe_symbol, escape_unk=True)
         return src
 
@@ -210,8 +212,6 @@ class CrossLingualSimileScorer():
     def get_costs(self, ref, hypos, src):
 
         def make_example(sentence):
-            import pdb
-            pdb.set_trace()
             sentence = self.detok.detokenize(sentence.split())
             if self.lower_case:
                 sentence = sentence.lower()
