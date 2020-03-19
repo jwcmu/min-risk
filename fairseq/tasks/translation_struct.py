@@ -283,7 +283,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         parser.add_argument('--seq-keep-reference', default=False, action='store_true',
                             help='retain the reference in the list of hypos')
         parser.add_argument('--seq-scorer', default='bleu', metavar='SCORER',
-                            choices=['bleu', 'simile', 'mixed'],
+                            choices=['bleu', 'simile', 'mixed', 'cl-simile'],
                             help='optimization metric for sequence level training')
 
         parser.add_argument('--seq-gen-with-dropout', default=False, action='store_true',

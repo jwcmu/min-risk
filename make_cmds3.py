@@ -4,7 +4,7 @@ cl_ratio = [0, 0.5, 1]
 savedir="/project/efs/users/jwieting/checkpoints/transformer-big"
 newdir="/project/efs/users/jwieting/checkpoints/transformer-mrt-cl-simile"
 
-base = "python -u train.py data-bin/wmt17_en_de " \
+base = "python -u train.py data-bin/wmt17_en_de -a transformer_vaswani_wmt_en_de_big " \
        "-s de -t en --max-update 5000 --optimizer adam " \
        "--lr 1e-5 --dropout 0.3 --max-tokens 251 --seq-max-len-a 1.5 " \
        "--seq-max-len-b 5 --criterion sequence_risk --task translation_struct" \
@@ -22,7 +22,7 @@ for i in alphas:
         for k in cl_ratio:
             fname = newdir + "-{0}-{1}-{2}".format(i, j, k)
             cmd = "rm -Rf {0} && mkdir {0} " \
-                  "&& cp {1} {0} " \
+                  "&& cp {1}/checkpoint_best.pt {0} " \
                   "&& NCCL_LL_THRESHOLD=0 ".format(fname, savedir) + base.format(fname, i, j, k)
             print(cmd + " > outfile-cl-simile-{0}.txt 2>&1".format(ct))
             ct += 1
