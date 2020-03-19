@@ -186,8 +186,6 @@ class CrossLingualSimileScorer():
         elif self.cl_ratio == 1:
             src_e = make_example(src)
             hyp_e = make_example(hypo)
-            import pdb
-            pdb.set_trace()
             wx1, wl1, wm1 = self.model.torchify_batch([src_e])
             wx2, wl2, wm2 = self.model.torchify_batch([hyp_e])
             score = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
@@ -229,6 +227,8 @@ class CrossLingualSimileScorer():
         elif self.cl_ratio == 1:
             src_e = make_example(src)
             hypos = [make_example(i) for i in hypos]
+            import pdb
+            pdb.set_trace()git pu
             wx1, wl1, wm1 = self.model.torchify_batch([src_e])
             wx2, wl2, wm2 = self.model.torchify_batch(hypos)
             scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
