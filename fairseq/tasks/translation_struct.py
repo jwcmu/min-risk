@@ -508,7 +508,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
                     hypos.append(hyp)
                     hypo_lens.append(len(hyp.split()))
 
-                _costs = scorer.get_costs(ref, hypos)
+                _costs = scorer.get_costs(ref, hypos, src)
 
                 for j, _ in enumerate(hypos_i):
                     lp = np.exp(1 - max(ref_len, hypo_lens[j]) / float(min(ref_len, hypo_lens[j])))
