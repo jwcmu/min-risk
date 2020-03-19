@@ -210,6 +210,8 @@ class CrossLingualSimileScorer():
     def get_costs(self, ref, hypos, src):
 
         def make_example(sentence):
+            import pdb
+            pdb.set_trace()
             sentence = self.detok.detokenize(sentence.split())
             if self.lower_case:
                 sentence = sentence.lower()
@@ -471,6 +473,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         source = sample['net_input']['src_tokens'].int()
 
         pad_idx = self.target_dictionary.pad()
+        assert pad_idx == self.source_dictionary.pad()
 
         costs = torch.zeros(bsz, nhypos).to(sample['target'].device)
 
