@@ -61,10 +61,7 @@ class SimileScorer(object):
                                map_location='cpu')
 
         state_dict = model['state_dict']
-        if 'vocab_words' in model:
-            vocab_words = model['vocab_words']
-        else:
-            vocab_words = model['vocab']
+        vocab_words = model['vocab_words']
         sim_args = model['args']
 
         #turn off gpu
@@ -141,7 +138,7 @@ class CrossLingualSimileScorer():
                                map_location='cpu')
 
         state_dict = model['state_dict']
-        vocab_words = model['vocab_words']
+        vocab_words = model['vocab']
         sim_args = model['args']
 
         #turn off gpu
