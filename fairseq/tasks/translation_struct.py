@@ -304,7 +304,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
                             help='unknown word penalty to be used in seq generation')
         parser.add_argument('--mixed-ratio', default=0.5, type=float,
                             help='unknown word penalty to be used in seq generation')
-        parser.add_argument('--cross-lingual-ratio', default=0.0, type=float,
+        parser.add_argument('--cl-ratio', default=0.0, type=float,
                             help='unknown word penalty to be used in seq generation')
 
     def __init__(self, args, src_dict, tgt_dict):
