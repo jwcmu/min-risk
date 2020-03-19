@@ -61,7 +61,10 @@ class SimileScorer(object):
                                map_location='cpu')
 
         state_dict = model['state_dict']
-        vocab_words = model['vocab_words']
+        if 'vocab_words' in model:
+            vocab_words = model['vocab_words']
+        else:
+            vocab_words = model['vocab']
         sim_args = model['args']
 
         #turn off gpu
