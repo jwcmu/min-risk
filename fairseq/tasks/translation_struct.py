@@ -228,7 +228,7 @@ class CrossLingualSimileScorer():
             src_e = make_example(src)
             hypos = [make_example(i) for i in hypos]
             import pdb
-            pdb.set_trace()git pu
+            pdb.set_trace()
             wx1, wl1, wm1 = self.model.torchify_batch([src_e])
             wx2, wl2, wm2 = self.model.torchify_batch(hypos)
             scores = self.model.scoring_function(wx1, wm1, wl1, wx2, wm2, wl2)
