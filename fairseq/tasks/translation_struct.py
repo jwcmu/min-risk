@@ -466,7 +466,9 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         bsz = len(sample['hypos'])
         nhypos = len(sample['hypos'][0])
         target = sample['target'].int()
-        source = sample['source'].int()
+        source = sample['net_input']['src_tokens'].int()
+        import pdb
+        pdb.set_trace()
         pad_idx = self.target_dictionary.pad()
 
         costs = torch.zeros(bsz, nhypos).to(sample['target'].device)
