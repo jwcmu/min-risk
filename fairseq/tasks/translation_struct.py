@@ -452,7 +452,7 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
                 )
             elif scorer == 'cl-simile':
                 self._scorers[scorer] = CrossLingualSimileScorer(
-                    tgt_dict, src_dict, bpe_symbol=self.args.seq_remove_bpe, args=self.args,
+                    tgt_dict, src_dict, self.args.cl_ratio, bpe_symbol=self.args.seq_remove_bpe, args=self.args,
                 )
             else:
                 raise ValueError('Unknown sequence scorer {}'.format(scorer))
