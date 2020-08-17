@@ -57,7 +57,7 @@ class SimileScorer(object):
         self.tgt_dict = tgt_dict
         self.bpe_symbol = bpe_symbol
         #self.scorer = bleu.Scorer(tgt_dict.pad(), tgt_dict.eos(), tgt_dict.unk())
-        model = torch.load('sim/sim.pt',
+        model = torch.load('simile-mrt/sim/sim.pt',
                                map_location='cpu')
 
         state_dict = model['state_dict']
@@ -67,7 +67,7 @@ class SimileScorer(object):
         #turn off gpu
         sim_args.gpu = -1
 
-        self.model = WordAveraging(sim_args, vocab_words, sp_file="sim/sim.sp.30k.model")
+        self.model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/sim/sim.sp.30k.model")
         self.model.load_state_dict(state_dict, strict=True)
         # use a fresh Dictionary for scoring, so that we can add new elements
         self.scoring_dict = Dictionary()
@@ -134,7 +134,7 @@ class CrossLingualSimileScorer():
         self.bpe_symbol = bpe_symbol
         self.cl_ratio = cl_ratio
 
-        model = torch.load('cl_sim/model.de.lc.100_4_50000.pt',
+        model = torch.load('simile-mrt/cl_sim/model.de.lc.100_4_50000.pt',
                                map_location='cpu')
 
         state_dict = model['state_dict']
@@ -144,7 +144,7 @@ class CrossLingualSimileScorer():
         #turn off gpu
         sim_args.gpu = -1
 
-        self.model = WordAveraging(sim_args, vocab_words, sp_file="cl_sim/all.de.lc.sp.50k.model")
+        self.model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/cl_sim/all.de.lc.sp.50k.model")
         self.model.load_state_dict(state_dict, strict=True)
         # use a fresh Dictionary for scoring, so that we can add new elements
         self.scoring_dict = Dictionary()
