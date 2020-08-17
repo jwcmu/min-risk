@@ -46,6 +46,7 @@ setup(
         'sacrebleu',
         'torch',
         'tqdm',
+        'nltk',
     ],
     packages=find_packages(exclude=['scripts', 'tests']),
     ext_modules=[bleu],
