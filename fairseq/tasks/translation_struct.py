@@ -134,8 +134,12 @@ class CrossLingualSimileScorer():
         self.bpe_symbol = bpe_symbol
         self.cl_ratio = cl_ratio
 
-        model = torch.load('simile-mrt/cl_sim/model.de.lc.100_4_50000.pt',
-                               map_location='cpu')
+        if args.cl_file == "all":
+            model = torch.load('simile-mrt/cl_sim/model.de.lc.100_4_50000.pt',
+                                   map_location='cpu')
+        elif args.cl_file == "wmt":
+            model = torch.load('simile-mrt/cl_sim/model.wmt.all.lc.100.0.0_25.pt',
+                                   map_location='cpu')
 
         state_dict = model['state_dict']
         vocab_words = model['vocab']
@@ -144,7 +148,10 @@ class CrossLingualSimileScorer():
         #turn off gpu
         sim_args.gpu = -1
 
-        self.model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/cl_sim/all.de.lc.sp.50k.model")
+        if args.cl_file == "all":
+            self.model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/cl_sim/all.de.lc.sp.50k.model")
+        elif args.cl_file == "wmt":
+            self.model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/cl_sim/wmt.all.lc.sp.50k.model")
         self.model.load_state_dict(state_dict, strict=True)
         # use a fresh Dictionary for scoring, so that we can add new elements
         self.scoring_dict = Dictionary()
@@ -305,6 +312,8 @@ class TranslationStructuredPredictionTask(translation.TranslationTask):
         parser.add_argument('--mixed-ratio', default=0.5, type=float,
                             help='unknown word penalty to be used in seq generation')
         parser.add_argument('--cl-ratio', default=0.0, type=float,
+                            help='unknown word penalty to be used in seq generation')
+        parser.add_argument('--cl-file', default="all", choices=["all", "wmt"],
                             help='unknown word penalty to be used in seq generation')
 
     def __init__(self, args, src_dict, tgt_dict):
