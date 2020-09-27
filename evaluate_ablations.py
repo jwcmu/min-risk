@@ -46,7 +46,9 @@ dirs = glob("checkpoints/*")
 for d in dirs:
     name = d.replace("checkpoints/","")
     file = d + "/checkpoint_1_5000.pt"
-    evaluate(file, name + "-{0}".format(5000))
+    if os.path.exists(file):
+        evaluate(file, name + "-{0}".format(5000))
 
     file = d + "/checkpoint_1_10000.pt"
-    evaluate(file, name + "-{0}".format(10000))
+    if os.path.exists(file):
+        evaluate(file, name + "-{0}".format(10000))
