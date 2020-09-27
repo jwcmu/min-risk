@@ -1,6 +1,6 @@
 checpoint=$1
 
-fairseq-generate data-bin/wmt17_en_de  \
+fairseq-generate simile-mrt/data-bin/wmt17_en_de  \
   --path $checkpoint \
   --beam 5 --batch-size 128 --remove-bpe -s de -t en --gen-subset valid | tee /tmp/gen.out
 
