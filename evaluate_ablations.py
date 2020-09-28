@@ -78,6 +78,5 @@ elif args.mode == "evaluate":
     if os.path.exists(args.file):
         evaluate(args.file, args.name + "-{0}".format(5000))
 
-    file = d + "/checkpoint_1_10000.pt"
     if os.path.exists(args.file):
         evaluate(args.file, args.name + "-{0}".format(10000))
