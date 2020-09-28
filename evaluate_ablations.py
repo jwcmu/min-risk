@@ -77,7 +77,7 @@ elif args.mode == "list":
             print("python evaluate_ablations.py --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(10000)))
 elif args.mode == "evaluate":
     if os.path.exists(args.file):
-        evaluate(args.file, args.name + "-{0}".format(5000))
+        evaluate(args.file, args.name)
 
     if os.path.exists(args.file):
-        evaluate(args.file, args.name + "-{0}".format(10000))
+        evaluate(args.file, args.name)
