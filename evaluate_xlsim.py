@@ -20,7 +20,7 @@ args = parser.parse_args()
 def score_output(args):
     detok = MosesDetokenizer('en')
 
-    model = torch.load('simile-mrt/cl_sim/wmt.all.lc.sp.50k.model',
+    model = torch.load('simile-mrt/cl_sim/model.wmt.all.lc.100.0.0_25.pt',
                        map_location='cpu')
 
     state_dict = model['state_dict']
@@ -30,7 +30,7 @@ def score_output(args):
     # turn off gpu
     sim_args.gpu = -1
 
-    model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/cl_sim/model.wmt.all.lc.100.0.0_25.pt")
+    model = WordAveraging(sim_args, vocab_words, sp_file="simile-mrt/cl_sim/wmt.all.lc.sp.50k.model")
     model.load_state_dict(state_dict, strict=True)
     # use a fresh Dictionary for scoring, so that we can add new elements
     lower_case = sim_args.lower_case

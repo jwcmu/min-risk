@@ -1,4 +1,4 @@
-checpoint=$1
+checkpoint=$1
 
 fairseq-generate simile-mrt/data-bin/wmt17_en_de  \
   --path $checkpoint \

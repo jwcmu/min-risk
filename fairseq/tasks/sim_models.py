@@ -65,7 +65,7 @@ class ParaModel(nn.Module):
 
 class WordAveraging(ParaModel):
 
-    def __init__(self, args, vocab, sp_file="simile/sim/sim.sp.30k.model"):
+    def __init__(self, args, vocab, sp_file="simile-mrt/sim/sim.sp.30k.model"):
         super(WordAveraging, self).__init__(args, vocab, sp_file)
 
         self.vocab = vocab
