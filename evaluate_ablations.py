@@ -12,22 +12,23 @@ args = parser.parse_args()
 
 def evaluate(file, name):
     
-    os.system("fairseq-generate simile-mrt/data-bin/wmt17_en_de --path {0} -s de -t en --beam 5 --batch-size 128 --remove-bpe --gen-subset valid | tee {1}.gen.out".format(file, name))
-    os.system("grep ^H {0}.gen.out | cut -f3- > {0}.gen.out.sys".format(name))
-    os.system("grep ^T {0}.gen.out | cut -f2- > {0}.gen.out.ref".format(name))
-    os.system("grep ^S {0}.gen.out | cut -f2- > {0}.gen.out.src".format(name))
-    os.system("fairseq-score --sys {0}.gen.out.sys --ref {0}.gen.out.ref --sacrebleu > {0}.txt".format(name))
-    os.system("python evaluate_bleu_sim.py --sys-file {0}.gen.out.sys --ref-file {0}.gen.out.ref >> {0}.txt".format(name))
-    os.system("python evaluate_xlsim.py --sys-file {0}.gen.out.sys --src-file {0}.gen.out.src >> {0}.txt".format(name))
+    os.system("fairseq-generate simile-mrt/data-bin/wmt17_en_de --path {0} -s de -t en --beam 5 --batch-size 128 --remove-bpe --gen-subset valid > {1}.gen.valid.out".format(file, name))
+    os.system("grep ^H {0}.gen.valid.out | cut -f3- > {0}.gen.valid.out.sys".format(name))
+    os.system("grep ^T {0}.gen.valid.out | cut -f2- > {0}.gen.valid.out.ref".format(name))
+    os.system("grep ^S {0}.gen.valid.out | cut -f2- > {0}.gen.valid.out.src".format(name))
+    os.system("fairseq-score --sys {0}.gen.valid.out.sys --ref {0}.gen.valid.out.ref --sacrebleu > {0}.txt".format(name))
+    os.system("python evaluate_bleu_sim.py --sys-file {0}.gen.valid.out.sys --ref-file {0}.gen.valid.out.ref >> {0}.txt".format(name))
+    os.system("python evaluate_xlsim.py --sys-file {0}.gen.valid.out.sys --src-file {0}.gen.valid.out.src >> {0}.txt".format(name))
+
+    os.system("echo \"\" >> {0}.txt".format(name))
     
-    
-    os.system("fairseq-generate simile-mrt/data-bin/wmt17_en_de --path {0} -s de -t en --beam 5 --batch-size 128 --remove-bpe | tee {1}.gen.out".format(file, name))
-    os.system("grep ^H {0}.gen.out | cut -f3- > {0}.gen.out.sys".format(name))
-    os.system("grep ^T {0}.gen.out | cut -f2- > {0}.gen.out.ref".format(name))
-    os.system("grep ^S {0}.gen.out | cut -f2- > {0}.gen.out.src".format(name))
-    os.system("fairseq-score --sys {0}.gen.out.sys --ref {0}.gen.out.ref --sacrebleu >> {0}.txt".format(name))
-    os.system("python evaluate_bleu_sim.py --sys-file {0}.gen.out.sys --ref-file {0}.gen.out.ref >> {0}.txt".format(name))
-    os.system("python evaluate_xlsim.py --sys-file {0}.gen.out.sys --src-file {0}.gen.out.src >> {0}.txt".format(name))
+    os.system("fairseq-generate simile-mrt/data-bin/wmt17_en_de --path {0} -s de -t en --beam 5 --batch-size 128 --remove-bpe > {1}.gen.test.out".format(file, name))
+    os.system("grep ^H {0}.gen.test.out | cut -f3- > {0}.gen.test.out.sys".format(name))
+    os.system("grep ^T {0}.gen.test.out | cut -f2- > {0}.gen.test.out.ref".format(name))
+    os.system("grep ^S {0}.gen.test.out | cut -f2- > {0}.gen.test.out.src".format(name))
+    os.system("fairseq-score --sys {0}.gen.test.out.sys --ref {0}.gen.test.out.ref --sacrebleu >> {0}.txt".format(name))
+    os.system("python evaluate_bleu_sim.py --sys-file {0}.gen.test.out.sys --ref-file {0}.gen.test.out.ref >> {0}.txt".format(name))
+    os.system("python evaluate_xlsim.py --sys-file {0}.gen.test.out.sys --src-file {0}.gen.test.out.src >> {0}.txt".format(name))
 
     """
     dirlist = ["out-of-domain/indomain_training/data-bin/", "out-of-domain/QED/data-bin/",
