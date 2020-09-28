@@ -69,11 +69,11 @@ elif args.mode == "list":
 
         file = d + "/checkpoint_1_5000.pt"
         if os.path.exists(file):
-            print("python evaluate_ablations.pu --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(5000)))
+            print("python evaluate_ablations.py --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(5000)))
 
         file = d + "/checkpoint_1_10000.pt"
         if os.path.exists(file):
-            print("python evaluate_ablations.pu --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(10000)))
+            print("python evaluate_ablations.py --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(10000)))
 elif args.mode == "evaluate":
     if os.path.exists(args.file):
         evaluate(args.file, args.name + "-{0}".format(5000))
