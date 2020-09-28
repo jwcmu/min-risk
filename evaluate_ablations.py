@@ -1,5 +1,14 @@
 import os
 from glob import glob
+import argparse
+import sys
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode', choices=["all", "list", "evaluate"], default="all")
+parser.add_argument('--file', default=None)
+parser.add_argument('--name', default=None)
+
+args = parser.parse_args()
 
 def evaluate(file, name):
     
@@ -43,12 +52,32 @@ def evaluate(file, name):
 
 dirs = glob("checkpoints/*")
 
-for d in dirs:
-    name = d.replace("checkpoints/","")
-    file = d + "/checkpoint_1_5000.pt"
-    if os.path.exists(file):
-        evaluate(file, name + "-{0}".format(5000))
+if args.mode == "all":
+    for d in dirs:
+        name = d.replace("checkpoints/","")
+
+        file = d + "/checkpoint_1_5000.pt"
+        if os.path.exists(file):
+            evaluate(file, name + "-{0}".format(5000))
+
+        file = d + "/checkpoint_1_10000.pt"
+        if os.path.exists(file):
+            evaluate(file, name + "-{0}".format(10000))
+elif args.mode == "list":
+    for d in dirs:
+        name = d.replace("checkpoints/","")
+
+        file = d + "/checkpoint_1_5000.pt"
+        if os.path.exists(file):
+            print("python evaluate_ablations.pu --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(5000)))
+
+        file = d + "/checkpoint_1_10000.pt"
+        if os.path.exists(file):
+            print("python evaluate_ablations.pu --mode evaluate --file {0} --name {1}".format(file, name + "-{0}".format(10000)))
+elif args.mode == "evaluate":
+    if os.path.exists(args.file):
+        evaluate(args.file, args.name + "-{0}".format(5000))
 
     file = d + "/checkpoint_1_10000.pt"
-    if os.path.exists(file):
-        evaluate(file, name + "-{0}".format(10000))
+    if os.path.exists(args.file):
+        evaluate(args.file, args.name + "-{0}".format(10000))
